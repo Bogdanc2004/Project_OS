@@ -5,12 +5,13 @@
 #include <unistd.h>
 
 #define N 10000
+#define D 200
 typedef struct {
-    char treasureID[N];
-    char userName;
+    char treasureID[D];
+    char userName[D];
     float latitude;
     float longitude;
-    char clue[N];
+    char clue[D];
     int value;
 
 }Treasure;
@@ -23,9 +24,9 @@ void writeInTreasureFile(int fd, char *treasure){
     printf("User: "); scanf("%s", t.userName);  printf("\n");
     printf("Latitude: "); scanf("%f", &t.latitude);  printf("\n");
     printf("Longitude: "); scanf("%f", &t.longitude); printf("\n");
-    printf("Clue: ", N); scanf("%s", t.clue); printf("\n");
+    printf("Clue: "); scanf("%s", t.clue); printf("\n");
     printf("Value:" ); scanf("%d", &t.value); printf("\n");
-    sprintf(line, "%s, %s, %s, %f, %f, %s, %d\n", t.treasureID, t.userName, t.latitude, t.longitude, t.clue, t.longitude);
+    sprintf(line, "%s, %s, %s, %f, %f, %s, %d\n",treasure, t.treasureID, t.userName, t.latitude, t.longitude, t.clue, t.value);
     if(write(fd, line, N)==-1)
         perror("Cannot write");
 }
