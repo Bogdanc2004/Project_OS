@@ -1,0 +1,46 @@
+/*when a hunt is deleted here it will be printed the hunt name and after that the log was deleted and also the respective*/ 
+hunt2
+./treasure_manager -add hunt2 
+hunt2 was created and also treasure.txt and log.txt.
+./treasure_manager --add hunt2 
+./treasure_manager --add hunt2 
+./treasure_manager --add hunt2 
+./treasure_manager --add hunt2 
+./treasure_manager --remove_hunt hunt2 
+hunt1
+./treasure_manager --add hunt1 
+hunt1 was created and also treasure.txt and log.txt.
+./treasure_manager --remove_hunt hunt1 
+hunt1
+./treasure_manager --add hunt1 
+hunt1 was created and also treasure.txt and log.txt.
+./treasure_manager --add hunt1 treasure1 
+treasure1 was recorded by user Bogdan.
+./treasure_manager --add hunt1 treasure1 
+./treasure_manager --add hunt1 treasure1 
+treasure1 was recorded by user Bogdan.
+./treasure_manager --add hunt1 treasure1 
+treasure1 was recorded by user treasure.
+./treasure_manager --add hunt1 treasure1 
+./treasure_manager --add hunt1 treasure1 
+./treasure_manager --add hunt1 treasure1 
+treasure1 was recorded by user Bogdan.
+./treasure_manager --add hunt1 treasure1 
+./treasure_manager --add hunt1 treasure1 
+treasure1 was recorded by user Bogdan.
+./treasure_manager --add hunt1 treasure3 
+treasure3 was recorded by user Gogu.
+./treasure_manager --view hunt1 treasure1 
+./treasure_manager --list hunt1 
+./treasure_manager --view hunt1 treasure1 
+./treasure_manager --view hunt1 treasure1 
+./treasure_manager --view hunt1 treasure1 
+./treasure_manager --view hunt1 treasure3 
+./treasure_manager --view hunt1 treasure1 
+./treasure_manager --view hunt1 treasure1 
+./treasure_manager --remove_treasure hunt1 treasure1 
+./treasure_manager --add hunt1 treasure3 
+treasure3 was recorded by user Bogdan.
+./treasure_manager --view hunt1 treasure3 
+./treasure_manager --view hunt1 treasure3 
+./treasure_manager --remove_hunt hunt1 

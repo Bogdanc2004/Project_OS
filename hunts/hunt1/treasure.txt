@@ -1,2 +1,1 @@
-treasure1, 111, Bogdan, 1.340000, 2.330000, There, 30000
-treasure2, 21, Gogu, 1.340000, 2.330000, Here, 50000
+treasure3, Bogdan, 1.300000, 1.400000, Here, 6999

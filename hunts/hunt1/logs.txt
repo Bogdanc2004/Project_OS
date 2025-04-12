@@ -1,3 +1,0 @@
-hunt1 was created and also treasure.txt and log.txt.
-treasure1 was recorded by user Bogdan.
-treasure2 was recorded by user Gogu.
