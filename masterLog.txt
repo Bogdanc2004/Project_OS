@@ -44,3 +44,16 @@ treasure3 was recorded by user Bogdan.
 ./treasure_manager --view hunt1 treasure3 
 ./treasure_manager --view hunt1 treasure3 
 ./treasure_manager --remove_hunt hunt1 
+hunt1
+./treasure_manager --remove_hunt hunt1 treasure3 
+hunt3
+./treasure_manager --add hunt3 treasure3 
+hunt3 was created and also treasure.txt and log.txt.
+treasure3 was recorded by user Bogdan.
+./treasure_manager --remove_hunt hunt3 
+hunt2
+./treasure_manager --remove_hunt hunt2 
+hunt1
+./a.out --add hunt1 
+hunt1 was created and also treasure.txt and log.txt.
+./a.out --remove_hunt hunt1 

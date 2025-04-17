@@ -1,3 +1,6 @@
 ./treasure_manager --add hunt2 treasure3 
 hunt2 was created and also treasure.txt and log.txt.
 treasure3 was recorded by user Bogdan.
+./treasure_manager --view hunt2 treasure3 
+./a.out --list hunt2 
+./a.out --view hunt2 treasure3 
