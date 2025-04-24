@@ -4,3 +4,7 @@ treasure3 was recorded by user Bogdan.
 ./treasure_manager --view hunt2 treasure3 
 ./a.out --list hunt2 
 ./a.out --view hunt2 treasure3 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
