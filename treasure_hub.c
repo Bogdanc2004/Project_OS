@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 700
+#define _XOPEN_SOURCE 500
 
 #include <stdio.h>
 #include <string.h>
@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 pid_t monitorPid=-1;
 int stopping_monitor=0;
@@ -33,6 +34,15 @@ void stop_monitor(){
     kill(monitorPid, SIGTERM);
     stopping_monitor = 1;
     printf("[treasure_hub]: Sent stop signal to monitor\n");
+    int status;
+    while (waitpid(monitorPid, &status, WNOHANG) == 0) {
+        usleep(100000); // Sleep for 100ms before checking again
+    }
+    
+    printf("[treasure_hub]: Monitor terminated. Status: %d\n", WEXITSTATUS(status));
+    monitorPid = -1;
+    stopping_monitor = 0;
+    
 }
 
 void checkMonitorStatus(){
@@ -40,17 +50,18 @@ void checkMonitorStatus(){
     int status;
     pid_t result;
     if((result=waitpid(monitorPid, &status, WNOHANG))==monitorPid){
-        printf("[treasure_hub]: Monitor terminated. Status: %d", WEXITSTATUS(status));
+        printf("[treasure_hub]: Monitor terminated. Status: %d\n", WEXITSTATUS(status));
         monitorPid=-1;
         stopping_monitor=0;
     }
 }
 
 void writeCmd(const char *args){
-    FILE *fc=fopen("cmd.txt", "w");
-    if(fc){
-        fprintf(fc, "%s\n", args);
-        fclose(fc);
+    int fc=open("cmd.txt", O_WRONLY|O_CREAT|O_TRUNC, 0664);
+    if(fc!=-1){
+        write(fc, args, strlen(args));
+        write(fc,"\n",1);
+        close(fc);
     }
     else{
         perror("Cannot create command!");
@@ -78,8 +89,10 @@ int main(){
             start_monitor();
         }
         else if(!strcmp(command, "list_hunts")){
-            if(monitorPid>0)
+            if(monitorPid>0){
                 kill(monitorPid, SIGUSR1);
+                usleep(100000);  
+            }
             else
                 printf("[treasure_hub]: No monitor running.\n");
         }
@@ -89,7 +102,7 @@ int main(){
                 strcat(manCMD, command+strlen("list_treasures"));
                 writeCmd(manCMD);
                 kill(monitorPid, SIGUSR2);
-                fflush(stdout);             
+                usleep(100000);  
             }
             else
                 printf("[treasure_hub]: No monitor running.\n");
@@ -97,9 +110,10 @@ int main(){
         else if(!strncmp(command, "view_treasure", strlen("view_treasure"))){
             if(monitorPid>0){
                 char manCMD[256]={"./treasure_manager --view"};
-                strcat(manCMD, command+strlen("list_treasures"));
+                strcat(manCMD, command+strlen("view_treasure"));
                 writeCmd(manCMD);
-                kill(monitorPid, SIGUSR2);    
+                kill(monitorPid, SIGUSR2);
+                usleep(100000);    
             }
             else 
                 printf("[treasure_hub]: No monitor running.\n");

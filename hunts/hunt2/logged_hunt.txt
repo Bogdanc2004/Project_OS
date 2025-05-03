@@ -8,3 +8,17 @@ treasure3 was recorded by user Bogdan.
 ./treasure_manager --list hunt2 
 ./treasure_manager --list hunt2 
 ./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --list hunt2 
+./treasure_manager --view hunt2 treasure3 
+./treasure_manager --view hunt2 treasure3 
+./treasure_manager --add hunt2 treasure3 
+treasure3 was recorded by user B.
+./treasure_manager --list hunt2 
+./treasure_manager --view hunt2 treasure3 

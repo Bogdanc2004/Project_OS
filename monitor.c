@@ -6,17 +6,100 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+#define READ_BUF_SIZE 128
+#define MAX_PATH 600
+#define MAX_LINE 256
 
 volatile sig_atomic_t running=1;
 
+char *my_fgets(char *buf, int maxlen, int fd) {
+    static char internal_buf[READ_BUF_SIZE];
+    static int buf_pos = 0, buf_len = 0;
+
+    int i = 0;
+
+    while (i < maxlen - 1) {
+        if (buf_pos >= buf_len) {
+            // refill internal buffer
+            buf_len = read(fd, internal_buf, READ_BUF_SIZE);
+            if (buf_len <= 0) {
+                if (i == 0) return NULL; // EOF or error before any char
+                break; // return what we read so far
+            }
+            buf_pos = 0;
+        }
+
+        char c = internal_buf[buf_pos++];
+        buf[i++] = c;
+        if (c == '\n') break;
+    }
+
+    buf[i] = '\0'; // null-terminate
+    return buf;
+}
+
 void handle_signal(int sig){
-    FILE *fc;
+    int fc;
     char line[100];
     switch (sig){
-        case SIGUSR1:{/*here implement some code regarding hunts*/ break;}
+        case SIGUSR1:{
+            const char *huntsDir="hunts";
+            DIR *dir=opendir(huntsDir);
+            if(!dir){
+                perror("Failed to open hunts directory");
+                exit(-1);
+            }
+            struct dirent *entry;
+            int huntCount = 0;
+            while ((entry = readdir(dir)) != NULL) {
+                if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+                    continue;
+                }
+
+                char dirPath[MAX_PATH];
+                snprintf(dirPath, sizeof(dirPath), "%s/%s", huntsDir, entry->d_name);
+
+                struct stat statbuf;
+                if (stat(dirPath, &statbuf) == -1) {
+                    perror("Failed to stat directory entry");
+                    continue;
+                }
+
+                if (S_ISDIR(statbuf.st_mode)) {
+                    char filePath[MAX_PATH + 20]; // Increase buffer size to accommodate "/treasure.txt" safely
+                    snprintf(filePath, sizeof(filePath), "%s/treasure.txt", dirPath);
+                    if (strlen(filePath) >= sizeof(filePath)) {
+                        fprintf(stderr, "Error: File path truncated: %s\n", filePath);
+                        continue;
+                    }
+                    int fd = open(filePath, O_RDONLY);
+                    if (fd == -1) {
+                        // Skip if treasure.txt does not exist
+                        continue;
+                    }
+                    int treasureCount = 0;
+                    char line[MAX_LINE];
+                    while (my_fgets(line, sizeof(line), fd) != NULL) {
+                        treasureCount++;
+                    }
+                    close(fd);
+                    printf("%s --- %d treasures\n", entry->d_name, treasureCount);
+                    huntCount++;
+                }
+            }
+            closedir(dir);
+            if(huntCount==0){
+                fprintf(stderr, "Error: No hunts found.\n");
+            }
+            
+            break;}
         case SIGUSR2:{
-            fc=fopen("cmd.txt", "r");
-            if(fc&& fgets(line, 100, fc)!=NULL){
+            fc=open("cmd.txt", O_RDONLY);
+            if(fc!=-1 && my_fgets(line, 100, fc)!=NULL){
                 line[strlen(line)-1]='\0';
                 pid_t pid=fork();
                 if(pid< 0){
@@ -24,7 +107,6 @@ void handle_signal(int sig){
                     exit(-1);
                 }
                 if(pid== 0){
-                    fflush(stdout);
                     char *args[10]; // Adjust size as needed
                     int i = 0;
                     char *token = strtok(line, " ");
@@ -37,7 +119,6 @@ void handle_signal(int sig){
                         perror("Exec failed");
                         exit(-1);
                     }
-                    fflush(stdout);
                 }
                 else{
                     int status;
@@ -51,11 +132,11 @@ void handle_signal(int sig){
                 }
 
             }
-            fclose(fc);
+            close(fc);
             break;}
         case SIGINT:{
-            fc=fopen("cmd.txt", "r");
-            if(fc&& fgets(line, 100, fc)!=NULL){
+            fc=open("cmd.txt", O_RDONLY);
+            if(fc!=-1&& my_fgets(line, 100, fc)!=NULL){
                 line[strlen(line-1)]='\0';
                 pid_t pid=fork();
                 if(pid< 0){
@@ -81,7 +162,7 @@ void handle_signal(int sig){
                 }
 
             }
-            fclose(fc);
+            close(fc);
             break;}
         case SIGTERM:{
             printf("Termination requested, exiting in 2s...\n");
@@ -106,8 +187,17 @@ int main(){
     sigaction(SIGTERM, &sa, NULL);
 
     while(running){
-        pause();
-}
+        sigset_t sigset;
+        sigemptyset(&sigset);
+        sigaddset(&sigset, SIGUSR1);
+        sigaddset(&sigset, SIGUSR2);
+        sigaddset(&sigset, SIGINT);
+        sigaddset(&sigset, SIGTERM);
+
+        int sig;
+        sigwait(&sigset, &sig); // Wait for a signal
+        handle_signal(sig);     // Handle the signal
+    }
  
-return 0;
+    return 0;
 }

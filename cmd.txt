@@ -1,1 +1,1 @@
-./treasure_manager --list hunt2
+./treasure_manager --view hunt2 treasure3
