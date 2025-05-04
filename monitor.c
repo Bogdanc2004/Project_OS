@@ -133,6 +133,7 @@ void handle_signal(int sig){
 
             }
             close(fc);
+            unlink("cmd.txt");
             break;}
         case SIGINT:{
             fc=open("cmd.txt", O_RDONLY);
@@ -149,6 +150,7 @@ void handle_signal(int sig){
                         perror("Exec failed");
                         exit(-1);
                     }
+
                 }
                 else{
                     int status;
@@ -163,6 +165,7 @@ void handle_signal(int sig){
 
             }
             close(fc);
+            unlink("cmd.txt");
             break;}
         case SIGTERM:{
             printf("Termination requested, exiting in 2s...\n");

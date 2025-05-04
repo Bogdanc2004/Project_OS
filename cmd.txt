@@ -1,1 +1,0 @@
-./treasure_manager --view hunt2 treasure3
