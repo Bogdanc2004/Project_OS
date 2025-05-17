@@ -162,10 +162,10 @@ void handle_signal(int sig) {
                     int status;
                     waitpid(pid, &status, 0);
                     if(WIFEXITED(status)){
-                        printf("[treasure_manager] process finished: status - %d\n", WEXITSTATUS(status));
+                        dprintf(out_fd,"[treasure_manager] process finished: status - %d\n", WEXITSTATUS(status));
                     }
                     else{
-                        printf("[treasure_manager] failed!\n");
+                        dprintf(out_fd,"[treasure_manager] failed!\n");
                     }
                 }
 
