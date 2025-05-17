@@ -1,14 +1,16 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 700 // Ensure compatibility for POSIX features
+#define _POSIX_C_SOURCE 200809L // Explicitly define POSIX version for usleep
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <unistd.h> // Ensure this is included for usleep
 #include <signal.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <time.h> // Include for nanosleep
 
 #define READ_BUF_SIZE 128
 #define MAX_PATH 600
@@ -42,14 +44,17 @@ char *my_fgets(char *buf, int maxlen, int fd) {
     return buf;
 }
 
-void handle_signal(int sig){
+volatile int out_fd = STDOUT_FILENO; // Use pipe file descriptor for output
+
+void handle_signal(int sig) {
     int fc;
     char line[100];
-    switch (sig){
-        case SIGUSR1:{
-            const char *huntsDir="hunts";
-            DIR *dir=opendir(huntsDir);
-            if(!dir){
+    switch (sig) {
+        case SIGUSR1: {
+            const char *huntsDir = "hunts";
+            DIR *dir = opendir(huntsDir);
+            if (!dir) {
+                dprintf(out_fd, "Error: Failed to open hunts directory.\n");
                 perror("Failed to open hunts directory");
                 exit(-1);
             }
@@ -70,15 +75,15 @@ void handle_signal(int sig){
                 }
 
                 if (S_ISDIR(statbuf.st_mode)) {
-                    char filePath[MAX_PATH + 20]; // Increase buffer size to accommodate "/treasure.txt" safely
+                    char filePath[MAX_PATH + 20];
                     snprintf(filePath, sizeof(filePath), "%s/treasure.txt", dirPath);
                     if (strlen(filePath) >= sizeof(filePath)) {
-                        fprintf(stderr, "Error: File path truncated: %s\n", filePath);
+                        dprintf(out_fd, "Error: File path truncated: %s\n", filePath);
                         continue;
                     }
                     int fd = open(filePath, O_RDONLY);
                     if (fd == -1) {
-                        // Skip if treasure.txt does not exist
+                        dprintf(out_fd, "Warning: No treasures found in %s.\n", entry->d_name);
                         continue;
                     }
                     int treasureCount = 0;
@@ -87,26 +92,27 @@ void handle_signal(int sig){
                         treasureCount++;
                     }
                     close(fd);
-                    printf("%s --- %d treasures\n", entry->d_name, treasureCount);
+                    dprintf(out_fd, "%s --- %d treasures\n", entry->d_name, treasureCount);
                     huntCount++;
                 }
             }
             closedir(dir);
-            if(huntCount==0){
-                fprintf(stderr, "Error: No hunts found.\n");
+            if (huntCount == 0) {
+                dprintf(out_fd, "Error: No hunts found.\n");
             }
-            
-            break;}
-        case SIGUSR2:{
-            fc=open("cmd.txt", O_RDONLY);
-            if(fc!=-1 && my_fgets(line, 100, fc)!=NULL){
-                line[strlen(line)-1]='\0';
-                pid_t pid=fork();
-                if(pid< 0){
+            break;
+        }
+        case SIGUSR2: {
+            fc = open("cmd.txt", O_RDONLY);
+            if (fc != -1 && my_fgets(line, 100, fc) != NULL) {
+                line[strlen(line) - 1] = '\0';
+                pid_t pid = fork();
+                if (pid < 0) {
                     perror("Fork failed");
-                    exit(-1);
+                    close(fc);
+                    return;
                 }
-                if(pid== 0){
+                if (pid == 0) {
                     char *args[10]; // Adjust size as needed
                     int i = 0;
                     char *token = strtok(line, " ");
@@ -115,26 +121,26 @@ void handle_signal(int sig){
                         token = strtok(NULL, " ");
                     }
                     args[i] = NULL;
-                    if(execvp(args[0], args)==-1){
+                    if (execvp(args[0], args) == -1) {
                         perror("Exec failed");
                         exit(-1);
                     }
-                }
-                else{
+                } else {
                     int status;
                     waitpid(pid, &status, 0);
-                    if(WIFEXITED(status)){
-                        printf("[treasure_manager] process finished: status - %d\n", WEXITSTATUS(status));
-                    }
-                    else{
-                        printf("[treasure_manager] failed!\n");
+                    if (WIFEXITED(status)) {
+                        dprintf(out_fd, "[treasure_manager] process finished: status - %d\n", WEXITSTATUS(status));
+                    } else {
+                        dprintf(out_fd, "[treasure_manager] process failed!\n");
                     }
                 }
-
+            } else {
+                dprintf(out_fd, "Error: Failed to read cmd.txt.\n");
             }
             close(fc);
             unlink("cmd.txt");
-            break;}
+            break;
+        }
         case SIGINT:{
             fc=open("cmd.txt", O_RDONLY);
             if(fc!=-1&& my_fgets(line, 100, fc)!=NULL){
@@ -167,40 +173,42 @@ void handle_signal(int sig){
             close(fc);
             unlink("cmd.txt");
             break;}
-        case SIGTERM:{
-            printf("Termination requested, exiting in 2s...\n");
-            usleep(2000000);
+        case SIGTERM: {
+            dprintf(out_fd, "Termination requested, exiting in 2s...\n");
+            struct timespec ts = {2, 0}; // 2 seconds, 0 nanoseconds
+            nanosleep(&ts, NULL);
             running = 0;
             break;
         }
-        default:{perror("This should not happen, something went wrong during communications of signals"); exit(-1); break;}
+        default: {
+            dprintf(out_fd, "Error: Unexpected signal received: %d\n", sig);
+            break;
+        }
     }
 }
 
 
-int main(){
+int main(int argc, char **argv){
+    if (argc > 1) {
+        out_fd = atoi(argv[1]); // Read pipe file descriptor
+        if (out_fd <= 0) {
+            fprintf(stderr, "Error: Invalid pipe file descriptor.\n");
+            return -1;
+        }
+    }
+
     struct sigaction sa;
-    sa.sa_handler=handle_signal;
-    sa.sa_flags=0;
+    sa.sa_handler = handle_signal;
+    sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
 
     sigaction(SIGUSR1, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    while(running){
-        sigset_t sigset;
-        sigemptyset(&sigset);
-        sigaddset(&sigset, SIGUSR1);
-        sigaddset(&sigset, SIGUSR2);
-        sigaddset(&sigset, SIGINT);
-        sigaddset(&sigset, SIGTERM);
-
-        int sig;
-        sigwait(&sigset, &sig); // Wait for a signal
-        handle_signal(sig);     // Handle the signal
+    while (running) {
+        pause(); // Wait for signals
     }
- 
+
     return 0;
 }

@@ -1,0 +1,4 @@
+treasure1, Joe, 1.500000, 1.600000, In the boat, 3000
+treasure2, John, 3.400000, 2.100000, Romania, 2000
+treasure1, Joe, 1.300000, 4.500000, Dream, 4000
+treasure2, Fred, 5.600000, 7.600000, In front of the tree, 2000
